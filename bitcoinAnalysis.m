@@ -1,0 +1,85 @@
+% JSON data string
+data_json = '{"prices":[[1690848000000,29233.136365580438],[1690934400000,29537.109746927432],[1691020800000,29146.63627084363],[1691107200000,29176.15059658541],[1691193600000,29087.938086007627],[1691280000000,29046.800457023197],[1691366400000,29044.204375577556],[1691452800000,29178.147751873083],[1691539200000,29779.56167125089],[1691625600000,29585.48807737921],[1691712000000,29423.81891597763],[1691798400000,29396.8479714205],[1691884800000,29412.142274584105],[1691971200000,29284.96971374381],[1692057600000,29400.58680419105],[1692144000000,29170.490397060614],[1692230400000,28754.197021112574],[1692316800000,26501.58726991974],[1692403200000,26042.838256848998],[1692489600000,26104.778630797897],[1692576000000,26160.700419818215],[1692662400000,26119.005958595222],[1692748800000,26033.675406585844],[1692835200000,26450.00862461353],[1692921600000,26134.934254516003],[1693008000000,26044.036209289134],[1693094400000,26002.015717319366],[1693180800000,26082.717178218525],[1693267200000,26109.2698239287],[1693353600000,27730.50373550554],[1693376822000,27419.60188042259]],"market_caps":[[1690848000000,568333703606.0996],[1690934400000,572408929757.971],[1691020800000,567074709353.651],[1691107200000,567940644790.4882],[1691193600000,565073127339.627],[1691280000000,564970113457.8998],[1691366400000,564947914083.0184],[1691452800000,567529179865.8152],[1691539200000,579214283623.8071],[1691625600000,575535414817.4033],[1691712000000,572414205818.4142],[1691798400000,571976559045.8302],[1691884800000,572257798803.9086],[1691971200000,569687130446.7833],[1692057600000,572242735188.2397],[1692144000000,567498309102.7323],[1692230400000,559982624303.4923],[1692316800000,516026928368.83746],[1692403200000,506815826635.9217],[1692489600000,508087686822.70435],[1692576000000,509078930366.0949],[1692662400000,508491920831.3545],[1692748800000,506356213378.17975],[1692835200000,514955818082.43463],[1692921600000,508906955118.32086],[1693008000000,507007928705.4434],[1693094400000,506086069151.6848],[1693180800000,507835678906.77924],[1693267200000,508350651765.9018],[1693353600000,539045091002.16876],[1693376822000,534588277133.59076]],"total_volumes":[[1690848000000,6641808341.386258],[1690934400000,15289922840.873833],[1691020800000,19266318894.086517],[1691107200000,12539132810.40034],[1691193600000,12112869085.655884],[1691280000000,5335308729.48437],[1691366400000,5360283576.269965],[1691452800000,13252185122.112452],[1691539200000,14603570418.91888],[1691625600000,14633310097.491423],[1691712000000,8106253519.025447],[1691798400000,4651950357.636653],[1691884800000,3994297895.288944],[1691971200000,4755220448.634491],[1692057600000,12408355477.111338],[1692144000000,11523395157.99864],[1692230400000,14809979642.373245],[1692316800000,29965585683.421356],[1692403200000,18062351745.50358],[1692489600000,3355038748.9824667],[1692576000000,8304370131.833873],[1692662400000,9377753161.447634],[1692748800000,13702941053.015312],[1692835200000,14600566342.214415],[1692921600000,11961319630.81013],[1693008000000,2582213805.5461373],[1693094400000,3420999388.355067],[1693180800000,4743752357.401259],[1693267200000,9995933796.2508],[1693353600000,29462388818.839893],[1693376822000,30791852042.052395]]}';
+
+% Decode JSON data
+bitcoinData = jsondecode(data_json);
+
+
+% Assuming the provided data is stored in a structure named 'bitcoinData'
+
+% Extract data from the structure
+prices = bitcoinData.prices(:, 2);
+timestamps = bitcoinData.prices(:, 1);
+
+% Define parameters for moving averages
+shortPeriod = 10; % Short-term moving average period
+longPeriod = 50;  % Long-term moving average period
+
+% Compute moving averages
+shortMA = movmean(prices, shortPeriod);
+longMA = movmean(prices, longPeriod);
+
+% Initialize a signal vector
+signals = zeros(size(prices));
+
+% Generate signals using moving average crossover strategy
+for i = longPeriod+1:length(prices)
+    if shortMA(i) > longMA(i) && shortMA(i-1) <= longMA(i-1)
+        signals(i) = 1; % Buy signal
+    elseif shortMA(i) < longMA(i) && shortMA(i-1) >= longMA(i-1)
+        signals(i) = -1; % Sell signal
+    end
+end
+
+% Simulate predictions for future data
+% For this example, let's just extend the moving averages
+
+futurePeriod = 10; % Number of periods into the future to predict
+futurePrices = [prices; zeros(futurePeriod, 1)]; % Extend data
+
+% Extend moving averages for future data
+futureShortMA = movmean(futurePrices, shortPeriod);
+futureLongMA = movmean(futurePrices, longPeriod);
+
+% Initialize predicted signals for future data
+futureSignals = zeros(size(futurePrices));
+
+% Generate signals for future data using the extended moving averages
+for i = length(prices)+1:length(futurePrices)
+    if futureShortMA(i) > futureLongMA(i) && futureShortMA(i-1) <= futureLongMA(i-1)
+        futureSignals(i) = 1; % Predicted buy signal
+    elseif futureShortMA(i) < futureLongMA(i) && futureShortMA(i-1) >= futureLongMA(i-1)
+        futureSignals(i) = -1; % Predicted sell signal
+    end
+end
+% Plot historical and predicted data
+figure;
+subplot(2,1,1);
+plot(timestamps, prices);
+hold on;
+plot(timestamps, shortMA);
+plot(timestamps, longMA);
+title('Historical Bitcoin Prices and Moving Averages');
+legend('Bitcoin Prices', 'Short-term MA', 'Long-term MA');
+xlabel('Timestamp');
+ylabel('Price');
+hold off;
+
+subplot(2,1,2);
+plot([timestamps; nan(futurePeriod, 1)], futurePrices);
+hold on;
+plot([timestamps; nan(futurePeriod, 1)], futureShortMA);
+plot([timestamps; nan(futurePeriod, 1)], futureLongMA);
+
+% Get the timestamps for predicted signals
+futureTimestamps = [timestamps; nan(futurePeriod, 1)];
+futureTimestamps(length(timestamps)+1:end) = timestamps(end) + (1:futurePeriod);
+
+stem(futureTimestamps(futureSignals == 1), futurePrices(futureSignals == 1), 'g', 'Marker', 'o');
+stem(futureTimestamps(futureSignals == -1), futurePrices(futureSignals == -1), 'r', 'Marker', 'x');
+
+title('Predicted Future Bitcoin Prices and Moving Averages');
+legend('Bitcoin Prices', 'Short-term MA', 'Long-term MA', 'Predicted Buy', 'Predicted Sell');
+xlabel('Timestamp');
+ylabel('Price');
+hold off;
